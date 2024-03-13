@@ -68,6 +68,7 @@ jobs:
           ./gradlew --no-daemon :micronaut-eclipsestore:test --rerun
       - name: Upload HotSpot crash reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: eclipsestore_hs_err
           path: eclipsestore/hs_err*
