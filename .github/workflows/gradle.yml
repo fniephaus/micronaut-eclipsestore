@@ -65,7 +65,7 @@ jobs:
         id: gradle
         run: |
           # ./gradlew check --no-daemon --continue
-          ./gradlew --no-daemon :micronaut-eclipsestore:test
+          ./gradlew --no-daemon :micronaut-eclipsestore:test --rerun
       - name: Upload HotSpot crash reports
         uses: actions/upload-artifact@v4
         with:
