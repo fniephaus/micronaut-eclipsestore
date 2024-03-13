@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - master
+      - debug
       - '[1-9]+.[0-9]+.x'
   pull_request:
     branches:
@@ -19,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: ['17', '21.0.1']
+        java: ['21']
     env:
       GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
       GRADLE_ENTERPRISE_CACHE_USERNAME: ${{ secrets.GRADLE_ENTERPRISE_CACHE_USERNAME }}
@@ -62,47 +63,52 @@ jobs:
         id: gradle
         run: |
           ./gradlew check --no-daemon --continue
-
-      - name: "🔎 Run static analysis"
-        if: env.SONAR_TOKEN != '' && matrix.java == '17'
-        run: |
-          ./gradlew sonar
-
-      - name: "📊 Publish Test Report"
-        if: always()
-        uses: mikepenz/action-junit-report@v4
+      - name: Upload HotSpot crash reports
+        uses: actions/upload-artifact@v4
         with:
-          check_name: Java CI / Test Report (${{ matrix.java }})
-          report_paths: '**/build/test-results/test/TEST-*.xml'
-          check_retries: 'true'
+          name: eclipsestore_hs_err
+          path: eclipsestore/hs_err*
 
-      - name: "📜 Upload binary compatibility check results"
-        if: matrix.java == '17'
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        with:
-          name: binary-compatibility-reports
-          path: "**/build/reports/binary-compatibility-*.html"
+      # - name: "🔎 Run static analysis"
+      #   if: env.SONAR_TOKEN != '' && matrix.java == '17'
+      #   run: |
+      #     ./gradlew sonar
 
-      - name: "📦 Publish to Sonatype Snapshots"
-        if: success() && github.event_name == 'push' && matrix.java == '17'
-        env:
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        run: ./gradlew publishToSonatype docs --no-daemon
+      # - name: "📊 Publish Test Report"
+      #   if: always()
+      #   uses: mikepenz/action-junit-report@v4
+      #   with:
+      #     check_name: Java CI / Test Report (${{ matrix.java }})
+      #     report_paths: '**/build/test-results/test/TEST-*.xml'
+      #     check_retries: 'true'
 
-      - name: "❓ Determine docs target repository"
-        uses: haya14busa/action-cond@v1
-        id: docs_target
-        with:
-          cond: ${{ github.repository == 'micronaut-projects/micronaut-core' }}
-          if_true: "micronaut-projects/micronaut-docs"
-          if_false: ${{ github.repository }}
+      # - name: "📜 Upload binary compatibility check results"
+      #   if: matrix.java == '17'
+      #   uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+      #   with:
+      #     name: binary-compatibility-reports
+      #     path: "**/build/reports/binary-compatibility-*.html"
 
-      - name: "📑 Publish to Github Pages"
-        if: success() && github.event_name == 'push' && matrix.java == '17'
-        uses: micronaut-projects/github-pages-deploy-action@master
-        env:
-          TARGET_REPOSITORY: ${{ steps.docs_target.outputs.value }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: build/docs
+      # - name: "📦 Publish to Sonatype Snapshots"
+      #   if: success() && github.event_name == 'push' && matrix.java == '17'
+      #   env:
+      #     SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      #     SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      #   run: ./gradlew publishToSonatype docs --no-daemon
+
+      # - name: "❓ Determine docs target repository"
+      #   uses: haya14busa/action-cond@v1
+      #   id: docs_target
+      #   with:
+      #     cond: ${{ github.repository == 'micronaut-projects/micronaut-core' }}
+      #     if_true: "micronaut-projects/micronaut-docs"
+      #     if_false: ${{ github.repository }}
+
+      # - name: "📑 Publish to Github Pages"
+      #   if: success() && github.event_name == 'push' && matrix.java == '17'
+      #   uses: micronaut-projects/github-pages-deploy-action@master
+      #   env:
+      #     TARGET_REPOSITORY: ${{ steps.docs_target.outputs.value }}
+      #     GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      #     BRANCH: gh-pages
+      #     FOLDER: build/docs
